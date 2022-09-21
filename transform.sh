@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-rootdir=`pwd`
-
 RED="\e[1;31m"
 GREEN="\e[1;32m"
 YELLOW="\e[1;33m"
@@ -49,7 +47,7 @@ fi
 # print infomation
 echo -e "--> The workdir is $RED$workdir$RESET, input_format is $GREEN$input_format$RESET, output_format is $YELLOW$output_format$RESET <--"
 
-# search files with input_format 
+# transform file formats 
 AllFiles=`find $workdir -iname "*.$input_format"`
 for file in $AllFiles
 do
@@ -66,5 +64,4 @@ do
         echo "$file -> $prefix.$output_format"
         `obabel $file -O $prefix.$output_format 2>/dev/null`    
     fi
-
 done
