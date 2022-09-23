@@ -4,4 +4,5 @@
 *.xyz
 *.gro
 *.mol
+*.cif
 POSCAR*

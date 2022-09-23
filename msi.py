@@ -85,6 +85,8 @@ class MSIParser(object):
                     elif len(self.atom_stack):
                         self.atom_stack.pop()
                         if getattr(atom, "formula") is not None:
+                            if not len(coord):
+                                coord = [0., 0., 0.]
                             atom.coord = np.array(coord)
                             model.atoms.append(atom)
                 else:
@@ -124,8 +126,8 @@ class MSIParser(object):
 
 
 if __name__ == '__main__':
-    # parser = MSIParser(sys.argv[1])
-    parser = MSIParser("Structures/catalysts/heterogeneous/beta-B.msi")
+    parser = MSIParser(sys.argv[1])
+    # parser = MSIParser("Structures/catalysts/heterogeneous/MgCl2-beta.msi")
     model = parser.parse()
     model.write_to_POSCAR()
     print()

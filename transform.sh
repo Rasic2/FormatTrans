@@ -47,19 +47,29 @@ fi
 echo -e "--> The workdir is $RED$workdir$RESET, input_format is $GREEN$input_format$RESET, output_format is $YELLOW$output_format$RESET <--"
 
 # transform file formats
-AllFiles=$(find $workdir -iname "*.$input_format")
-for file in $AllFiles; do
-  prefix=${file%.*}
-  if [ $output_format == "POSCAR" ]; then
-    parent=$(dirname $file)
-    name=$(basename $file)
-    prefix=${name%.*}
-    output="$parent/$output_format"_"$prefix"
+if [ $input_format != "POSCAR" ];then
+  AllFiles=$(find $workdir -iname "*.$input_format")
+else
+  AllFiles=$(find $workdir -iname "$input_format"'_*')
+fi
 
-    echo "$file -> $output"
-    $(python msi.py $file) && mv POSCAR $output
+for file in $AllFiles; do
+  parent=$(dirname $file) # parent directory
+  name=$(basename $file) # name of file
+  if [ $input_format == "POSCAR" ];then
+    name_without_prefix=${name#*_}
+    echo "$file -> $parent/$name_without_prefix.$output_format"
+    $(obabel -i POSCAR $file -O $parent/$name_without_prefix.$output_format)
   else
-    echo "$file -> $prefix.$output_format"
-    $(obabel $file -O $prefix.$output_format 2>/dev/null)
+    if [ $output_format == "POSCAR" ]; then
+      name_without_suffix=${name%.*} # name of file without the extension
+      output="$parent/$output_format"_"$name_without_suffix"
+      echo "$file -> $output"
+      $(python msi.py $file) && mv POSCAR $output
+    else
+      name_without_suffix=${file%.*}
+      echo "$file -> $name_without_suffix.$output_format"
+      $(obabel $file -O $name_without_suffix.$output_format 2>/dev/null)
+    fi
   fi
 done
