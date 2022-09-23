@@ -1,3 +1,4 @@
+import sys
 import tokenize
 from itertools import groupby
 
@@ -60,6 +61,7 @@ class MSIParser(object):
         return tokens_list
 
     def parse(self):
+        minus_symbol = None
         lattice = []
         for index, token in enumerate(self._tokens):
             if token.type == 54 and token.string == "(":  # Begin token
@@ -89,10 +91,18 @@ class MSIParser(object):
                     raise FormatError("*.msi file format error and I can't parse it")
             else:
                 if len(self.array_stack):
-                    if not len(self.atom_stack):
-                        lattice.append(float(token.string))  # parse lattice
+                    string_value = token.string
+                    if token.type == 54:
+                        minus_symbol = token.string
                     else:
-                        coord.append(float(token.string))
+                        if minus_symbol is not None:
+                            string_value = minus_symbol + string_value
+                            minus_symbol = None
+
+                        if not len(self.atom_stack):
+                            lattice.append(float(string_value))  # parse lattice
+                        else:
+                            coord.append(float(string_value))
                 if len(self.attr_stack):
                     if not len(self.atom_stack):
                         if index + 2 < len(self._tokens):
@@ -114,7 +124,8 @@ class MSIParser(object):
 
 
 if __name__ == '__main__':
-    parser = MSIParser("Structures/catalysts/heterogeneous/beta-A.msi")
+    # parser = MSIParser(sys.argv[1])
+    parser = MSIParser("Structures/catalysts/heterogeneous/beta-B.msi")
     model = parser.parse()
     model.write_to_POSCAR()
     print()

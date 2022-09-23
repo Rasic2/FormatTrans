@@ -57,7 +57,7 @@ for file in $AllFiles; do
     output="$parent/$output_format"_"$prefix"
 
     echo "$file -> $output"
-    $(obabel $file -oPOSCAR -O $output 2>/dev/null)
+    $(python msi.py $file) && mv POSCAR $output
   else
     echo "$file -> $prefix.$output_format"
     $(obabel $file -O $prefix.$output_format 2>/dev/null)
