@@ -10,6 +10,14 @@ class FormatError(IOError):
 
 
 class MSIAtom(object):
+    """
+    Atom class defined for *.msi file
+
+    Attributes:
+        formula (str): element formula, e.g. "C" for `Element C`
+        coord (np.array): atom coordinate, e.g. array([0., 0., 0.])
+    """
+
     def __init__(self):
         self.formula = None
         self.coord = []
@@ -19,6 +27,24 @@ class MSIAtom(object):
 
 
 class MSIModel(object):
+    """
+    Model class defined for *.msi file
+
+    Attributes:
+        name (str): model name, e.g., "beta-A"
+        space_group (str): Space Group of model, only support "P1"
+        lattice (np.array): lattice matrix in <np.array> format
+        atoms (list): list of <MSIAtom class>
+
+        Example
+        =========
+
+        >>> lattice
+            array([12.470000  0.000000  0.000000]
+                  [0.000000  12.470000  0.000000]
+                  [0.000000   0.000000 26.331000])
+    """
+
     def __init__(self):
         self.name = None
         self.space_group = None
@@ -26,6 +52,12 @@ class MSIModel(object):
         self.atoms = []
 
     def write_to_POSCAR(self):
+        """
+        Export the model to POSCAR file
+
+        Return:
+            `POSCAR` file
+        """
         lattice_strings = "".join([" ".join([f"{ii:>9.6f}" for ii in item]) + "\n" for item in self.lattice])
         formulas = [atom.formula for atom in self.atoms]
         elements = [(key, str(len(list(group)))) for key, group in groupby(formulas)]
@@ -44,7 +76,17 @@ class MSIModel(object):
 
 
 class MSIParser(object):
+    """
+    Parser class defined for *.msi file
+    """
+
     def __init__(self, file):
+        """
+        Initialize the MSIParser
+
+        Args:
+            file: path of *.msi file
+        """
         self.file = file
         self._tokens = self.__initialize_tokens()
         self.model_stack = []
@@ -53,6 +95,9 @@ class MSIParser(object):
         self.array_stack = []
 
     def __initialize_tokens(self):
+        """
+        Use tokenize to obtain the tokens
+        """
         tokens_list = []
         with tokenize.open(self.file) as f:
             tokens = tokenize.generate_tokens(f.readline)
@@ -61,20 +106,26 @@ class MSIParser(object):
         return tokens_list
 
     def parse(self):
+        """
+        Main parse func
+
+        Returns:
+            <MSIModel class> instance
+        """
         minus_symbol = None
         lattice = []
         for index, token in enumerate(self._tokens):
             if token.type == 54 and token.string == "(":  # Begin token
-                if token.line == '(1 Model\n':
+                if token.line == '(1 Model\n':  # Root token
                     self.model_stack.append(token)
                     model = MSIModel()
-                elif self._tokens[index + 1].string == "A":
+                elif self._tokens[index + 1].string == "A":  # Attr token
                     self.attr_stack.append(token)
-                elif self._tokens[index + 2].string == "Atom":
+                elif self._tokens[index + 2].string == "Atom":  # Atom token
                     self.atom_stack.append(token)
                     atom = MSIAtom()
                     coord = []
-                elif self._tokens[index - 1].string in ["A3", "B3", "C3", "XYZ"]:
+                elif self._tokens[index - 1].string in ["A3", "B3", "C3", "XYZ"]:  # Array token
                     self.array_stack.append(token)
             elif token.type == 54 and token.string == ")":  # End token
                 if len(self.model_stack):
@@ -86,15 +137,15 @@ class MSIParser(object):
                         self.atom_stack.pop()
                         if getattr(atom, "formula") is not None:
                             if not len(coord):
-                                coord = [0., 0., 0.]
+                                coord = [0., 0., 0.]  # fix bug: (0,0,0) coord not display in *.msi file
                             atom.coord = np.array(coord)
                             model.atoms.append(atom)
                 else:
                     raise FormatError("*.msi file format error and I can't parse it")
-            else:
-                if len(self.array_stack):
+            else:  # Content token
+                if len(self.array_stack):  # parse `** XYZ ()` or `** A3 ()`
                     string_value = token.string
-                    if token.type == 54:
+                    if token.type == 54:  # fix bug: '-' is considered as a delimiter
                         minus_symbol = token.string
                     else:
                         if minus_symbol is not None:
@@ -105,7 +156,7 @@ class MSIParser(object):
                             lattice.append(float(string_value))  # parse lattice
                         else:
                             coord.append(float(string_value))
-                if len(self.attr_stack):
+                if len(self.attr_stack):  # parse `(A ** )`
                     if not len(self.atom_stack):
                         if index + 2 < len(self._tokens):
                             if self._tokens[index + 2].string == "Label":
@@ -119,8 +170,8 @@ class MSIParser(object):
                         if self._tokens[index + 2].string == "ACL":
                             atom.formula = self._tokens[index + 3].string.split()[-1].replace('"', '')
 
-        model.lattice = np.array(lattice).reshape((3, 3))
-        model.atoms = sorted(model.atoms, key=lambda x: x.formula)
+        model.lattice = np.array(lattice).reshape((3, 3))  # transform to np.array format
+        model.atoms = sorted(model.atoms, key=lambda x: x.formula)  # sort atoms according to the formula key
 
         return model
 

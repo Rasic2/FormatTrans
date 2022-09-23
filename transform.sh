@@ -9,7 +9,7 @@ workdir=
 input_format="msi"
 output_format=
 while [ $# -gt 0 ]; do
-  if [[ $1 =~ "-i" ]]; then
+  if [[ $1 =~ "-i" ]]; then # catch input format
     if [ x"$2" != x ]; then
       input_format=$2
     else
@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
     fi
     shift
     shift
-  elif [[ $1 =~ "-o" ]]; then
+  elif [[ $1 =~ "-o" ]]; then # catch output format
     if [ x"$2" != x ]; then
       output_format=$2
     else
@@ -33,12 +33,12 @@ while [ $# -gt 0 ]; do
   fi
 done
 
-if [ x"$output_format" == x ]; then
+if [ x"$output_format" == x ]; then # check output format
   echo -e "$RED Please specify a output_format $RESET"
   exit 2
 fi
 
-if [ x"$workdir" == x ]; then
+if [ x"$workdir" == x ]; then # check workdir
   echo -e "$RED Please specify a workdir $RESET"
   exit 3
 fi
@@ -46,18 +46,19 @@ fi
 # print infomation
 echo -e "--> The workdir is $RED$workdir$RESET, input_format is $GREEN$input_format$RESET, output_format is $YELLOW$output_format$RESET <--"
 
-# transform file formats
-if [ $input_format != "POSCAR" ];then
+# search files according to the input format
+if [ $input_format != "POSCAR" ]; then
   AllFiles=$(find $workdir -iname "*.$input_format")
 else
   AllFiles=$(find $workdir -iname "$input_format"'_*')
 fi
 
+# transform here
 for file in $AllFiles; do
   parent=$(dirname $file) # parent directory
-  name=$(basename $file) # name of file
-  if [ $input_format == "POSCAR" ];then
-    name_without_prefix=${name#*_}
+  name=$(basename $file)  # name of file
+  if [ $input_format == "POSCAR" ]; then
+    name_without_prefix=${name#*_} # name of file without `POSCAR_` prefix
     echo "$file -> $parent/$name_without_prefix.$output_format"
     $(obabel -i POSCAR $file -O $parent/$name_without_prefix.$output_format)
   else
