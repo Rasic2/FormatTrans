@@ -6,3 +6,4 @@
 *.mol
 *.cif
 POSCAR*
+/vmd.txt

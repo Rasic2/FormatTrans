@@ -9,7 +9,7 @@ workdir=
 input_format="msi"
 output_format=
 while [ $# -gt 0 ]; do
-  if [[ $1 =~ "-i" ]]; then # catch input format
+  if [[ $1 == "-i" ]]; then # catch input format
     if [ x"$2" != x ]; then
       input_format=$2
     else
@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
     fi
     shift
     shift
-  elif [[ $1 =~ "-o" ]]; then # catch output format
+  elif [[ $1 == "-o" ]]; then # catch output format
     if [ x"$2" != x ]; then
       output_format=$2
     else
@@ -26,6 +26,9 @@ while [ $# -gt 0 ]; do
       exit 2
     fi
     shift
+    shift
+  elif [[ $1 == "-h" ]]; then
+    echo -e "$RED Usage: bash transform.sh DIR -i input_format -o output_format $RESET"
     shift
   else
     workdir=$1
@@ -43,7 +46,7 @@ if [ x"$workdir" == x ]; then # check workdir
   exit 3
 fi
 
-# print infomation
+# print information
 echo -e "--> The workdir is $RED$workdir$RESET, input_format is $GREEN$input_format$RESET, output_format is $YELLOW$output_format$RESET <--"
 
 # search files according to the input format
@@ -62,11 +65,15 @@ for file in $AllFiles; do
     echo "$file -> $parent/$name_without_prefix.$output_format"
     $(obabel -i POSCAR $file -O $parent/$name_without_prefix.$output_format)
   else
-    if [ $output_format == "POSCAR" ]; then
+    if [[ $output_format == "POSCAR" ]]; then
       name_without_suffix=${name%.*} # name of file without the extension
       output="$parent/$output_format"_"$name_without_suffix"
       echo "$file -> $output"
-      $(python msi.py $file) && mv POSCAR $output
+      $(python msi.py $file POSCAR) && mv POSCAR $output
+    elif [[ $output_format == "cif" ]]; then
+      name_without_suffix=${file%.*}
+      echo "$file -> $name_without_suffix.$output_format"
+      $(python msi.py $file cif) && mv structure.cif $name_without_suffix.$output_format
     else
       name_without_suffix=${file%.*}
       echo "$file -> $name_without_suffix.$output_format"
