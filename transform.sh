@@ -57,6 +57,7 @@ else
 fi
 
 # transform here
+IFS=$'\n'
 for file in $AllFiles; do
   parent=$(dirname $file) # parent directory
   name=$(basename $file)  # name of file
